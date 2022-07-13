@@ -21,6 +21,7 @@ async function connect() {
   // collections 
   const servicesCollection = client.db('doctorsPortal').collection('services');
   const appointmentsCollection = client.db('doctorsPortal').collection('bookings');
+  const usersCollection = client.db('doctorsPortal').collection('users');
 
   // get api
   app.get('/api/services', async (req, res) => {
@@ -45,6 +46,18 @@ async function connect() {
     const query = { email: email }
     const appointments = await appointmentsCollection.find(query).toArray();
     res.send(appointments);
+  })
+
+  // users post api
+  // user put api
+  app.put('api/users/:email', async (req, res) => {
+    const email = req.params.email;
+    const user = req.body;
+    const query = { email: email };
+    const options = { upsert: true };
+    const updateDoc = { $set: user };
+    const result = await usersCollection.updateOne(query, updateDoc, options);
+    res.send(result);
   })
 
   // available services
