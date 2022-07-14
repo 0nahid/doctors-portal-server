@@ -50,15 +50,18 @@ async function connect() {
 
   // users post api
   // user put api
-  app.put('api/users/:email', async (req, res) => {
+  app.put('/api/user/:email', async (req, res) => {
     const email = req.params.email;
     const user = req.body;
-    const query = { email: email };
+    const filter = { email: email };
     const options = { upsert: true };
-    const updateDoc = { $set: user };
-    const result = await usersCollection.updateOne(query, updateDoc, options);
+    const updateDoc = {
+      $set: user,
+    };
+    const result = await usersCollection.updateOne(filter, updateDoc, options);
     res.send(result);
   })
+
 
   // available services
   // app.get('/api/services/:date', async (req, res) => {
