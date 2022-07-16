@@ -11,6 +11,23 @@ app.use(express.json())
 const cors = require('cors')
 app.use(cors())
 
+// verify jwt token
+function verifyToken(req, res, next) {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(403).send({ success: false, message: 'Forbidden access' });
+  }
+  const token = authorization.split(' ')[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ success: false, message: 'Unauthorized access' });
+    }
+    req.decoded = decoded;
+    // console.log(decoded);
+    next();
+  });
+}
+
 // connect mongo 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jl8yo.mongodb.net/?retryWrites=true&w=majority`;
@@ -41,11 +58,17 @@ async function connect() {
     return res.send({ success: true, result });
   })
   // appointment get api
-  app.get('/api/bookings', async (req, res) => {
+  app.get('/api/bookings', verifyToken, async (req, res) => {
     const email = req.query.email;
-    const query = { email: email }
-    const appointments = await appointmentsCollection.find(query).toArray();
-    res.send(appointments);
+    const decodedEmail = req.decoded.email;
+    if (email ===  decodedEmail) {
+      const query = { email: email }
+      const appointments = await appointmentsCollection.find(query).toArray();
+      res.send(appointments);
+    }
+    else {
+      res.send({ success: false, message: 'Unauthorized access' });
+    }
   })
 
   // users post api
