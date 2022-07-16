@@ -61,7 +61,7 @@ async function connect() {
   app.get('/api/bookings', verifyToken, async (req, res) => {
     const email = req.query.email;
     const decodedEmail = req.decoded.email;
-    if (email ===  decodedEmail) {
+    if (email === decodedEmail) {
       const query = { email: email }
       const appointments = await appointmentsCollection.find(query).toArray();
       res.send(appointments);
@@ -71,7 +71,6 @@ async function connect() {
     }
   })
 
-  // users post api
   // user put api
   app.put('/api/user/:email', async (req, res) => {
     const email = req.params.email;
@@ -84,6 +83,31 @@ async function connect() {
     const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
     const result = await usersCollection.updateOne(filter, updateDoc, options);
     res.send({ result, token });
+  })
+
+  // admin put api
+  app.put('/api/user/admin/:email', verifyToken, async (req, res) => {
+    const email = req.params.email;
+    const requester = req.decoded.email;
+    const requesterAccount = await usersCollection.findOne({ email: requester });
+    if (requesterAccount.admin) {
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { admin: true },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    }
+    else {
+      res.status(401).send({ success: false, message: 'Unauthorized access' });
+    }
+
+  })
+
+  // users get api 
+  app.get('/api/users', verifyToken, async (req, res) => {
+    const users = await usersCollection.find({}).toArray();
+    res.send(users);
   })
 
 
