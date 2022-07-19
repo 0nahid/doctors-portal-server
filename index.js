@@ -13,9 +13,10 @@ app.use(cors())
 
 // verify jwt token
 function verifyToken(req, res, next) {
-  const authorization = req.headers.authorization;
+  const authorization = req.headers?.authorization;
+  // console.log(authorization);
   if (!authorization) {
-    return res.status(403).send({ success: false, message: 'Forbidden access' });
+    return res.status(403).send({ success: false, message: 'Forbidden Access' });
   }
   const token = authorization.split(' ')[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
@@ -85,24 +86,41 @@ async function connect() {
     res.send({ result, token });
   })
 
+
   // admin put api
-  app.put('/api/user/admin/:email', verifyToken, async (req, res) => {
+  app.put('/user/admin/:email', verifyToken, async (req, res) => {
     const email = req.params.email;
     const requester = req.decoded.email;
     const requesterAccount = await usersCollection.findOne({ email: requester });
-    if (requesterAccount.admin) {
+    if (requesterAccount.role === 'admin') {
       const filter = { email: email };
       const updateDoc = {
-        $set: { admin: true },
+        $set: {
+          role: 'admin',
+        },
       };
       const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     }
     else {
-      res.status(401).send({ success: false, message: 'Unauthorized access' });
+      res.status(403).send({ success: false, message: 'Unauthorized access' });
     }
 
   })
+
+  // admin get api
+  app.get('/admin/:email', async (req, res) => {
+    const email = req.params.email;
+    const user = await usersCollection.findOne({ email: email });
+    const isAdmin = user.role === 'admin';
+    // console.log(isAdmin);
+    res.send({ admin: isAdmin })
+  })
+
+  // app.get('/api/admin', verifyToken,async (req, res) => {
+  //   const admin = await usersCollection.find({ role: 'admin' }).toArray();
+  //   res.send(admin);
+  // })
 
   // users get api 
   app.get('/api/users', verifyToken, async (req, res) => {
@@ -117,6 +135,8 @@ async function connect() {
   //   const services = await servicesCollection.find({ formattedDate: date }).toArray();
   //   res.send(services);
   // })
+
+
   app.get('/api/available', async (req, res) => {
     const date = req.query.date;
     // console.log(date);
