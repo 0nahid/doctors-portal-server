@@ -11,6 +11,8 @@ app.use(express.json())
 const cors = require('cors')
 app.use(cors())
 
+
+
 // verify jwt token
 function verifyToken(req, res, next) {
   const authorization = req.headers?.authorization;
@@ -40,10 +42,23 @@ async function connect() {
   const servicesCollection = client.db('doctorsPortal').collection('services');
   const appointmentsCollection = client.db('doctorsPortal').collection('bookings');
   const usersCollection = client.db('doctorsPortal').collection('users');
+  const doctorsCollection = client.db('doctorsPortal').collection('doctors');
+
+  // verify admin
+  const verifyAdmin = async (req, res, next) => {
+    const requester = req.decoded.email;
+    const requesterAccount = await usersCollection.findOne({ email: requester });
+    if (requesterAccount.role === 'admin') {
+      next();
+    }
+    else {
+      return res.status(403).send({ success: false, message: 'Forbidden Access' });
+    }
+  }
 
   // get api
   app.get('/api/services', async (req, res) => {
-    const services = await servicesCollection.find({}).toArray();
+    const services = await servicesCollection.find({}).project({ name: 1 }).toArray();
     res.send(services);
   })
 
@@ -88,24 +103,14 @@ async function connect() {
 
 
   // admin put api
-  app.put('/user/admin/:email', verifyToken, async (req, res) => {
+  app.put('/user/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
     const email = req.params.email;
     const requester = req.decoded.email;
     const requesterAccount = await usersCollection.findOne({ email: requester });
-    if (requesterAccount.role === 'admin') {
-      const filter = { email: email };
-      const updateDoc = {
-        $set: {
-          role: 'admin',
-        },
-      };
-      const result = await usersCollection.updateOne(filter, updateDoc);
-      res.send(result);
-    }
-    else {
-      res.status(403).send({ success: false, message: 'Unauthorized access' });
-    }
-
+    const filter = { email: email };
+    const updateDoc = { $set: { role: 'admin' } };
+    const result = await usersCollection.updateOne(filter, updateDoc);
+    res.send(result);
   })
 
   // admin get api
@@ -162,6 +167,22 @@ async function connect() {
 
     res.send(services);
   })
+
+  // doctors get api
+  app.get('/api/doctors', verifyToken, verifyAdmin , async (req, res) => {
+    const doctors = await doctorsCollection.find({}).toArray();
+    res.send(doctors);
+  })
+
+  // doctors post api
+  app.post('/api/doctors', verifyToken, verifyAdmin , async (req, res) => {
+    const doctor = req.body;
+    const result = await doctorsCollection.insertOne(doctor);
+    res.send(result);
+  })
+
+
+
 }
 connect().catch(console.dir);
 
