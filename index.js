@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 const port = process.env.PORT || 5500
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 require('dotenv').config()
@@ -88,6 +88,14 @@ async function connect() {
       res.send({ success: false, message: 'Unauthorized access' });
     }
   })
+
+  // single appointment get api
+  app.get('/api/bookings/:id', verifyToken, async (req, res) => {
+    const id = req.params.id;
+    const appointment = await appointmentsCollection.findOne({ _id: ObjectId(id) });
+    res.send(appointment);
+  } )
+
 
   // user put api
   app.put('/api/user/:email', async (req, res) => {
