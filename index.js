@@ -3,6 +3,7 @@ const app = express()
 const port = process.env.PORT || 5500
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 require('dotenv').config()
 // console.log(process.env) 
 
@@ -26,7 +27,7 @@ function verifyToken(req, res, next) {
       return res.status(401).send({ success: false, message: 'Unauthorized access' });
     }
     req.decoded = decoded;
-    console.log(decoded);
+    // console.log(decoded);
     next();
   });
 }
@@ -48,7 +49,7 @@ async function connect() {
   const verifyAdmin = async (req, res, next) => {
     const requester = req.decoded.email;
     const requesterAccount = await usersCollection.findOne({ email: requester });
-    console.log(requesterAccount);
+    // console.log(requesterAccount);
     if (requesterAccount.role === 'admin') {
       next();
     }
@@ -179,6 +180,13 @@ async function connect() {
   app.post('/api/doctors', verifyToken, verifyAdmin, async (req, res) => {
     const doctor = req.body;
     const result = await doctorsCollection.insertOne(doctor);
+    res.send(result);
+  })
+
+  // doctors delete api
+  app.delete('/api/doctors/:mail', verifyToken, verifyAdmin, async (req, res) => {
+    const mail = req.params.mail;
+    const result = await doctorsCollection.deleteOne({ mail: mail });
     res.send(result);
   })
 
