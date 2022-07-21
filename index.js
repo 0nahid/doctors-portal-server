@@ -26,7 +26,7 @@ function verifyToken(req, res, next) {
       return res.status(401).send({ success: false, message: 'Unauthorized access' });
     }
     req.decoded = decoded;
-    // console.log(decoded);
+    console.log(decoded);
     next();
   });
 }
@@ -48,6 +48,7 @@ async function connect() {
   const verifyAdmin = async (req, res, next) => {
     const requester = req.decoded.email;
     const requesterAccount = await usersCollection.findOne({ email: requester });
+    console.log(requesterAccount);
     if (requesterAccount.role === 'admin') {
       next();
     }
@@ -128,7 +129,7 @@ async function connect() {
   // })
 
   // users get api 
-  app.get('/api/users', verifyToken, async (req, res) => {
+  app.get('/api/users', verifyToken, verifyAdmin, async (req, res) => {
     const users = await usersCollection.find({}).toArray();
     res.send(users);
   })
@@ -169,13 +170,13 @@ async function connect() {
   })
 
   // doctors get api
-  app.get('/api/doctors', verifyToken, verifyAdmin , async (req, res) => {
+  app.get('/api/doctors', verifyToken, verifyAdmin, async (req, res) => {
     const doctors = await doctorsCollection.find({}).toArray();
     res.send(doctors);
   })
 
   // doctors post api
-  app.post('/api/doctors', verifyToken, verifyAdmin , async (req, res) => {
+  app.post('/api/doctors', verifyToken, verifyAdmin, async (req, res) => {
     const doctor = req.body;
     const result = await doctorsCollection.insertOne(doctor);
     res.send(result);
