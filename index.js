@@ -1,9 +1,11 @@
 const express = require('express')
 const app = express()
 const port = process.env.PORT || 5500
-const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const sgTransport = require('nodemailer-sendgrid-transport');
+
 require('dotenv').config()
 // console.log(process.env) 
 
@@ -30,6 +32,42 @@ function verifyToken(req, res, next) {
     // console.log(decoded);
     next();
   });
+}
+
+// nodemailer 
+
+const options = {
+  auth: {
+    api_key: process.env.EMAIL_SENDER_KEY
+  }
+}
+const emailClient = nodemailer.createTransport(sgTransport(options));
+
+function sendAppointmentEmail(booking) {
+  const { name, email: mail, formattedDate, price, slot, userName } = booking;
+  const email = {
+    from: process.env.EMAIL_SENDER,
+    to: mail,
+    subject: `Appointment Confirmation - ${formattedDate} for ${name}`,
+    text: `Hi ${userName},\n\nThank you for booking an appointment with us.\n\nYour appointment is scheduled for ${formattedDate} at ${slot} for ${price}$`,
+    html: `
+    <p>Hi ${userName},</p>
+    <p>Thank you for booking an appointment with us.</p>
+    <p>Your appointment is scheduled for ${formattedDate} at ${slot} for ${price}$</p>
+    <p>Regards,</p>
+    <p>${process.env.EMAIL_SENDER}</p>
+    `
+  };
+
+  emailClient.sendMail(email, function (err, info) {
+    if (err) {
+      console.log(err);
+    }
+    else {
+      console.log(info);
+    }
+  });
+
 }
 
 // connect mongo 
@@ -72,7 +110,9 @@ async function connect() {
     if (exists) {
       return res.send({ success: false, booking: exists })
     }
+    sendAppointmentEmail(booking)
     const result = await appointmentsCollection.insertOne(booking);
+    console.log(`sending email to ${booking.email}`);
     return res.send({ success: true, result });
   })
   // appointment get api
@@ -94,7 +134,7 @@ async function connect() {
     const id = req.params.id;
     const appointment = await appointmentsCollection.findOne({ _id: ObjectId(id) });
     res.send(appointment);
-  } )
+  })
 
 
   // user put api
@@ -127,7 +167,7 @@ async function connect() {
   app.get('/admin/:email', async (req, res) => {
     const email = req.params.email;
     const user = await usersCollection.findOne({ email: email });
-    const isAdmin = user.role === 'admin';
+    const isAdmin = user?.role === 'admin';
     // console.log(isAdmin);
     res.send({ admin: isAdmin })
   })
