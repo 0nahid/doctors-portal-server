@@ -77,11 +77,14 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 async function connect() {
   await client.connect() ? console.log('connected') : console.log('not connected')
+
   // collections 
   const servicesCollection = client.db('doctorsPortal').collection('services');
   const appointmentsCollection = client.db('doctorsPortal').collection('bookings');
   const usersCollection = client.db('doctorsPortal').collection('users');
   const doctorsCollection = client.db('doctorsPortal').collection('doctors');
+  const paymentDetailsCollection = client.db('doctorsPortal').collection('paymentDetails');
+
 
   // verify admin
   const verifyAdmin = async (req, res, next) => {
@@ -238,7 +241,25 @@ async function connect() {
     res.send(result);
   })
 
-
+  // payment details post api
+  app.post('/api/booking/payment/:id', async (req, res) => {
+    const id = req.params.id;
+    const payment = req.body;
+    console.log(payment);
+    const result = await paymentDetailsCollection.insertOne({ ...payment, bookingId: id });
+    res.send(result);
+  })
+  // get api 
+  app.get('/api/booking/payment/:id', async (req, res) => {
+    const id = req.params.id;
+    const payment = await paymentDetailsCollection.findOne({ bookingId: id });
+    res.send(payment);
+  })
+  // get api
+  app.get('/api/booking/payment', async (req, res) => {
+    const payment = await paymentDetailsCollection.find({}).toArray();
+    res.send(payment);
+  })
 
 }
 connect().catch(console.dir);
