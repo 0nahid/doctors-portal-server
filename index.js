@@ -2,11 +2,13 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 5500
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const sgTransport = require('nodemailer-sendgrid-transport');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-require('dotenv').config()
+
 // console.log(process.env) 
 
 // cors && middleware
@@ -260,6 +262,20 @@ async function connect() {
     const payment = await paymentDetailsCollection.find({}).toArray();
     res.send(payment);
   })
+
+  // create payment intent
+  app.post('/create-payment-intent', verifyToken, async (req, res) => {
+    const { price } = req.body;
+    const amount = price * 100;
+    // console.log(amount);
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'usd',
+      payment_method_types: ['card']
+    });
+    res.send({ clientSecret: paymentIntent.client_secret })
+  });
+
 
 }
 connect().catch(console.dir);
