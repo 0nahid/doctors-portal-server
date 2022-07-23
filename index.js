@@ -141,6 +141,14 @@ async function connect() {
     res.send(appointment);
   })
 
+  // patch api
+  app.patch('/api/bookings/:id', verifyToken, async (req, res) => {
+    const id = req.params.id;
+    const payment = req.body;
+    const result = await appointmentsCollection.updateOne({ _id: ObjectId(id) }, { $set: { paid: true, transactionId: payment.transactionId } });
+    const paymentDetails = await paymentDetailsCollection.insertOne(payment);
+    res.send(result);
+  })
 
   // user put api
   app.put('/api/user/:email', async (req, res) => {
@@ -151,7 +159,7 @@ async function connect() {
     const updateDoc = {
       $set: user,
     };
-    const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
     const result = await usersCollection.updateOne(filter, updateDoc, options);
     res.send({ result, token });
   })
@@ -243,25 +251,25 @@ async function connect() {
     res.send(result);
   })
 
-  // payment details post api
-  app.post('/api/booking/payment/:id', async (req, res) => {
-    const id = req.params.id;
-    const payment = req.body;
-    console.log(payment);
-    const result = await paymentDetailsCollection.insertOne({ ...payment, bookingId: id });
-    res.send(result);
-  })
-  // get api 
-  app.get('/api/booking/payment/:id', async (req, res) => {
-    const id = req.params.id;
-    const payment = await paymentDetailsCollection.findOne({ bookingId: id });
-    res.send(payment);
-  })
-  // get api
-  app.get('/api/booking/payment', async (req, res) => {
-    const payment = await paymentDetailsCollection.find({}).toArray();
-    res.send(payment);
-  })
+  // // payment details post api
+  // app.post('/api/booking/payment/:id', async (req, res) => {
+  //   const id = req.params.id;
+  //   const payment = req.body;
+  //   console.log(payment);
+  //   const result = await paymentDetailsCollection.insertOne({ ...payment, bookingId: id });
+  //   res.send(result);
+  // })
+  // // get api 
+  // app.get('/api/booking/payment/:id', async (req, res) => {
+  //   const id = req.params.id;
+  //   const payment = await paymentDetailsCollection.findOne({ bookingId: id });
+  //   res.send(payment);
+  // })
+  // // get api
+  // app.get('/api/booking/payment', async (req, res) => {
+  //   const payment = await paymentDetailsCollection.find({}).toArray();
+  //   res.send(payment);
+  // })
 
   // create payment intent
   app.post('/create-payment-intent', verifyToken, async (req, res) => {
