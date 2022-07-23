@@ -1,4 +1,4 @@
 .vercel
 .env.dev 
 .env
-node_modules
+node_modules/

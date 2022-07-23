@@ -289,5 +289,5 @@ async function connect() {
 connect().catch(console.dir);
 
 
-app.get('/', (req, res) => res.send('Hello World!'))
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+app.get('/', (req, res) => res.send('Welcome to Doctors portal api!'))
+app.listen(port, () => console.log(`Server is listening on port ${port}!`))
